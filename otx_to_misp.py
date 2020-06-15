@@ -1,15 +1,19 @@
+from datetime import datetime, timedelta
+
 from OTXv2 import OTXv2
 from pandas.io.json import json_normalize
-from datetime import datetime, timedelta
+
+from config import MISP_KEY, OTX_KEY
+
 import requests
 from pymisp import PyMISP
 import time
 import json
 
+
 # service parameters
-otx_key = ''
 misp_url = ''
-misp_key = ''
+
 
 def readTimestamp():
         fname = "timestamp"
@@ -29,10 +33,9 @@ def saveTimestamp(timestamp=None):
         f.close()
 
 
-
 if __name__ == "__main__":
 
-    otx = OTXv2(otx_key)
+    otx = OTXv2(OTX_KEY)
 
     # The getall() method downloads all the OTX pulses and their assocciated indicators of compromise (IOCs) from your account.
     # This includes all of the following:
