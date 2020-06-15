@@ -44,7 +44,12 @@ def save_timestamp(timestamp=None):
 def main():
     otx = OTXv2(OTX_KEY)
 
-    mtime = read_timestamp()
+    try:
+        mtime = read_timestamp()
+    except FileNotFoundError:
+        save_timestamp()
+        mtime = read_timestamp()
+
     pulses = otx.getsince(mtime)
     print("Retrieved {} pulses".format(len(pulses)))
 
