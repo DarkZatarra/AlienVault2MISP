@@ -28,11 +28,13 @@ from pymisp import (
 from config import OTX_KEY, MISP_URL, MISP_KEY
 
 
-misp_verifycert = False
-
-
 def init(url, key):
-    return ExpandedPyMISP(url, key, misp_verifycert, debug=False)
+    return ExpandedPyMISP(
+        url=url,
+        key=key,
+        ssl=False,
+        debug=False
+    )
 
 
 def get_orgc(name):
