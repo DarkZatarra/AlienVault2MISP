@@ -91,6 +91,13 @@ def pulse_to_misp(pulse):
     return misp_event
 
 
+def calculate_time(days=1):
+    pasttime = datetime.datetime.now() - datetime.timedelta(days=days)
+    pasttime_beginning = datetime.datetime(pasttime.year, pasttime.month, pasttime.day, 0, 0, 0, 0)
+    x_from = int(time.mktime(pasttime_beginning.timetuple()))
+    return datetime.datetime.utcfromtimestamp(x_from).strftime('%Y-%m-%d %H:%M:%S')
+
+
 def main():
     otx = OTXv2(OTX_KEY)
 
@@ -99,17 +106,9 @@ def main():
     args = parser.parse_args()
 
     if args.max_age:
-        pasttime = datetime.datetime.now() - datetime.timedelta(days=args.max_age)
-        pasttime_beginning = datetime.datetime(pasttime.year, pasttime.month, pasttime.day, 0, 0, 0, 0)
-        pasttime_beginning_time = int(time.mktime(pasttime_beginning.timetuple()))
-        x_from = pasttime_beginning_time
-        mtime = datetime.datetime.utcfromtimestamp(x_from).strftime('%Y-%m-%d %H:%M:%S')
+        mtime = calculate_time(days=args.max_age)
     else:
-        pasttime = datetime.datetime.now() - datetime.timedelta(days=1)
-        pasttime_beginning = datetime.datetime(pasttime.year, pasttime.month, pasttime.day, 0, 0, 0, 0)
-        pasttime_beginning_time = int(time.mktime(pasttime_beginning.timetuple()))
-        x_from = pasttime_beginning_time
-        mtime = datetime.datetime.utcfromtimestamp(x_from).strftime('%Y-%m-%d %H:%M:%S')
+        mtime = calculate_time()
 
     pulses = otx.getsince(mtime)
     print("Retrieved {} pulses".format(len(pulses)))
