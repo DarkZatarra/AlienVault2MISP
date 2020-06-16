@@ -45,7 +45,7 @@ def pulse_to_misp(pulse):
     misp = init(MISP_URL, MISP_KEY)
 
     misp_event = MISPEvent()
-    misp_event.info = pulse['author_name'] + ' | ' + pulse['name']
+    misp_event.info = '{} | {}'.format(pulse['author_name'], pulse['name'])
     for tag in pulse['tags']:
         misp_event.add_tag(tag)
 
@@ -70,24 +70,23 @@ def pulse_to_misp(pulse):
         u'IPv4',
         u'FileHash-MD5']
         """
-        if indicator['type'] == 'URL':
-            if indicator['is_active'] == 1:
-                url_object = MISPObject(indicator['title'])
-                url_object.add_attribute(
-                    "Date-created",
-                    type="datetime",
-                    value=indicator['created'],
-                    disable_correlation=True,
-                    to_ids=False
-                )
-                url_object.add_attribute(
-                    "URL",
-                    type="url",
-                    value=indicator['indicator'],
-                    disable_correlation=False,
-                    to_ids=True
-                )
-                misp_event.add_object(url_object)
+        if indicator['type'] == 'URL' and indicator['is_active'] == 1:
+            url_object = MISPObject(indicator['title'])
+            url_object.add_attribute(
+                "Date-created",
+                type="datetime",
+                value=indicator['created'],
+                disable_correlation=True,
+                to_ids=False
+            )
+            url_object.add_attribute(
+                "URL",
+                type="url",
+                value=indicator['indicator'],
+                disable_correlation=False,
+                to_ids=True
+            )
+            misp_event.add_object(url_object)
 
     return misp_event
 
@@ -128,6 +127,7 @@ def main():
                 counter += 1
             except KeyError as err:
                 misp_event = 0
+
             if misp_event != 0:
                 misp.add_event(misp_event)
         else:
