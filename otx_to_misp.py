@@ -1,21 +1,8 @@
-"""
-# The getall() method downloads all the OTX pulses and their associated
-    # indicators of compromise (IOCs) from your account.
-    # This includes all of the following:
-    # - OTX pulses to which you subscribed through the web UI
-    # - Pulses created by OTX users to whom you subscribe
-    # - OTX pulses you created.
-    # If this is the first time you are using your account, the download
-      includes all pulses created by AlienVault.
-    # All users are subscribed to these by default.
-"""
-
 import argparse
 import json
-
 import time
+
 from datetime import datetime, timedelta
-import datetime
 
 from OTXv2 import OTXv2
 from pymisp import (
@@ -43,74 +30,42 @@ def get_orgc(name):
     return orgc
 
 
-def pulse_to_misp(pulse):
-    misp = init(MISP_URL, MISP_KEY)
+def add_mips_attribute(pulse, pulse_attr, mips_object_name, attr_rel, attr_type, mips_event):
+    if pulse[pulse_attr]:
+        misp_object = MISPObject(mips_object_name)
+        for value in pulse[pulse_attr]:
+            misp_object.add_attribute(
+                attr_rel,
+                type=attr_type,
+                value=value,
+                disable_correlation=True,
+                to_ids=False
+            )
+        mips_event.add_object(misp_object)
 
+
+def pulse_to_misp(misp, pulse):
     misp_event = MISPEvent()
     misp_event.info = '{} | {}'.format(pulse['author_name'], pulse['name'])
+
     for tag in pulse['tags']:
         misp_event.add_tag(tag)
+
     misp_org = MISPOrganisation()
     misp_org.name = 'AlienVault'
     misp_org.id = misp.get_organisation('AlienVault')['Organisation']['id']
     misp_org.uuid = misp.get_organisation('AlienVault')['Organisation']['uuid']
     misp_event.Orgc = misp_org
     misp_event.published = True
-    misp_event.date = datetime.datetime.strptime(pulse['modified'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%Y-%m-%d')
+    misp_event.date = datetime.strptime(pulse['modified'], '%Y-%m-%dT%H:%M:%S.%f').strftime('%Y-%m-%d')
 
-    # Here comes the target data
-    if pulse['targeted_countries']:
-        misp_object = MISPObject('Targeted Countries')
-        for target_country in pulse['targeted_countries']:
-            misp_object.add_attribute(
-                "regions",
-                type="target-location",
-                value=target_country,
-                disable_correlation=True,
-                to_ids=False
-            )
-        misp_event.add_object(misp_object)
+    add_mips_attribute(pulse, 'targeted_countries', 'Targeted Countries', 'regions', 'target-location', misp_event)
+    add_mips_attribute(pulse, 'industries', 'Sectors', 'sectors', 'text', misp_event)
+    add_mips_attribute(pulse, 'adversary', 'Adversary', 'Threat-actor', 'threat-actor', misp_event)
+    add_mips_attribute(pulse, 'references', 'References', 'external-references', 'link', misp_event)
 
-    if pulse['industries']:
-        misp_object = MISPObject('Sectors')
-        for industry in pulse['industries']:
-            misp_object.add_attribute(
-                "sectors",
-                type="text",
-                value=industry,
-                disable_correlation=True,
-                to_ids=False
-            )
-        misp_event.add_object(misp_object)
-
-    # Here comes threat actor part
-    if pulse['adversary']:
-        misp_object = MISPObject('Adversary')
-        misp_object.add_attribute(
-            "Threat-actor",
-            type="threat-actor",
-            value=pulse['adversary'],
-            disable_correlation=True,
-            to_ids=False
-        )
-        misp_event.add_object(misp_object)
-
-    # Here comes the reference part
-    if pulse['references']:
-        misp_object = MISPObject('Referenecs')
-        for reference in pulse['references']:
-            misp_object.add_attribute(
-                "external-references",
-                type="link",
-                value=reference,
-                disable_correlation=True,
-                to_ids=False
-            )
-        misp_event.add_object(misp_object)
-
-    # Here comes the TLP part
     if pulse['tlp']:
-        misp_event.add_tag('tlp:' + pulse['tlp'])
+        misp_event.add_tag('tlp:{}'.format(pulse['tlp']))
     
     verify_list = []   
     objects_created = []
@@ -270,10 +225,10 @@ def pulse_to_misp(pulse):
 
 
 def calculate_time(days=1):
-    pasttime = datetime.datetime.now() - datetime.timedelta(days=days)
-    pasttime_beginning = datetime.datetime(pasttime.year, pasttime.month, pasttime.day, 0, 0, 0, 0)
+    pasttime = datetime.now() - timedelta(days=days)
+    pasttime_beginning = datetime(pasttime.year, pasttime.month, pasttime.day, 0, 0, 0, 0)
     x_from = int(time.mktime(pasttime_beginning.timetuple()))
-    return datetime.datetime.utcfromtimestamp(x_from).strftime('%Y-%m-%d %H:%M:%S')
+    return datetime.utcfromtimestamp(x_from).strftime('%Y-%m-%d %H:%M:%S')
 
 
 def main():
@@ -292,23 +247,16 @@ def main():
     print("Retrieved {} pulses".format(len(pulses)))
 
     # Summary of information retrieved from OTX
-    #counter = 0
     for pulse in pulses:
-        #if counter < 1:
-            print(json.dumps(pulse, indent=2, sort_keys=True))
+        print(json.dumps(pulse, indent=2, sort_keys=True))
 
-            misp = init(MISP_URL, MISP_KEY)
+        misp = init(MISP_URL, MISP_KEY)
 
-            try:
-                misp_event = pulse_to_misp(pulse)
-                #counter += 1
-            except KeyError as err:
-                misp_event = 0
-
-            if misp_event != 0:
-                misp.add_event(misp_event)
-        #else:
-        #    break
+        try:
+            misp_event = pulse_to_misp(misp, pulse)
+            misp.add_event(misp_event)
+        except KeyError as err:
+            print(str(err))
 
 
 if __name__ == "__main__":
