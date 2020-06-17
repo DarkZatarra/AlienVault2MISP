@@ -24,12 +24,6 @@ def init(url, key):
     )
 
 
-def get_orgc(name):
-    misp = init(MISP_URL, MISP_KEY)
-    orgc = misp.get_organisation(name)
-    return orgc
-
-
 def add_mips_attribute(pulse, pulse_attr, mips_object_name, attr_rel, attr_type, mips_event):
     if pulse[pulse_attr]:
         misp_object = MISPObject(mips_object_name)
