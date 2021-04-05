@@ -3,12 +3,8 @@ This should be a script which is able to get data from AlienVault and ingests it
 
 ## Config
 
-You have to create a `.env` file which contains the following environment variables:
-
-```.env
-OTX_KEY=<OTX KEY HERE>
-MISP_URL=<MISP URL HERE>
-MISP_KEY=<MISP KEY HERE>
+```
+This is special setting for AWS
 ```
 
 Also, don't forget to:

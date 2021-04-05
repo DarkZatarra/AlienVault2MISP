@@ -12,7 +12,11 @@ from pymisp import (
     MISPObject
 )
 
-from config import OTX_KEY, MISP_URL, MISP_KEY
+from keys import misp_url, misp_key, otx_key
+
+OTX_KEY = otx_key
+MISP_URL = misp_url
+MISP_KEY = misp_key
 
 
 def init(url, key):
