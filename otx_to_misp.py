@@ -27,20 +27,29 @@ def init(url, key):
 def add_mips_attribute(pulse, pulse_attr, mips_object_name, attr_rel, attr_type, mips_event):
     if pulse[pulse_attr]:
         misp_object = MISPObject(mips_object_name)
-        for value in pulse[pulse_attr]:
+        if isinstance(pulse[pulse_attr], list) and pulse_attr != 'adversary':
+            for value in pulse[pulse_attr]:
+                misp_object.add_attribute(
+                    attr_rel,
+                    type=attr_type,
+                    value=value,
+                    disable_correlation=True,
+                    to_ids=False
+                )
+        elif not isinstance(pulse[pulse_attr], list) and pulse_attr == 'adversary':
             misp_object.add_attribute(
-                attr_rel,
-                type=attr_type,
-                value=value,
-                disable_correlation=True,
-                to_ids=False
+                    attr_rel,
+                    type=attr_type,
+                    value=pulse[pulse_attr],
+                    disable_correlation=True,
+                    to_ids=False
             )
         mips_event.add_object(misp_object)
 
 
 def pulse_to_misp(misp, pulse):
     misp_event = MISPEvent()
-    misp_event.info = '{} | {}'.format(pulse['author_name'], pulse['name'])
+    misp_event.info = pulse['name']
 
     for tag in pulse['tags']:
         misp_event.add_tag(tag)
