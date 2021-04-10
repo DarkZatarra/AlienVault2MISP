@@ -73,6 +73,54 @@ def pulse_to_misp(misp, pulse):
     verify_list = []   
     objects_created = []
 
+    if pulse['description']:
+        description_object = MISPObject('Description')
+        description_object.add_attribute(
+            "Description",
+            category="External analysis",
+            type="text",
+            value=pulse['description'],
+            disable_correlation=True,
+            to_ids=False
+        )
+        objects_created.append(description_object)
+
+    if pulse['id']:
+        internal_ref_object = MISPObject('OTX Link')
+        internal_ref_object.add_attribute(
+            "external-references",
+            type="link",
+            value="https://otx.alienvault.com/pulse/" + pulse['id'],
+            disable_correlation=True,
+            to_ids=False
+        )
+        objects_created.append(internal_ref_object)
+
+    # Code for testing galaxy part
+    #galaxies = misp.galaxies(pythonify=True)
+    #for galaxy in galaxies:
+    #    x_galaxy = misp.get_galaxy(galaxy.id)
+    #    for galaxy_cluster in x_galaxy["GalaxyCluster"]:
+    #        for galaxy_element in galaxy_cluster["GalaxyElement"]:
+    #            if 'T1112' in galaxy_element["value"]:
+    #                if 'mitre-attack-pattern' in galaxy_cluster["tag_name"]:
+    #                    print(galaxy_cluster["tag_name"])
+
+    # This is just a workaround, it should be moved to a separated method and improved
+    if pulse['attack_ids']:
+        for attack_id in pulse['attack_ids']:
+            if '.' in attack_id:
+                attack_id = attack_id.split('.')[0]
+            galaxies = misp.galaxies(pythonify=True)
+            for galaxy in galaxies:
+                x_galaxy = misp.get_galaxy(galaxy.id)
+                for galaxy_cluster in x_galaxy["GalaxyCluster"]:
+                    for galaxy_element in galaxy_cluster["GalaxyElement"]:
+                        if attack_id in galaxy_element["value"]:
+                            if 'mitre-attack-pattern' in galaxy_cluster["tag_name"]:
+                                #print(galaxy_cluster["tag_name"])
+                                misp_event.add_tag(galaxy_cluster["tag_name"])
+
     for indicator in pulse['indicators']:
         """
         u'FileHash-SHA256',
